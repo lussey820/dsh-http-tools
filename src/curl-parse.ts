@@ -108,7 +108,11 @@ export function applyCurlParseTool(
       rawInput: args.curl,
     }),
     presentResult: (args, result) => {
-      const value = result.meta as unknown as CurlParseValue
+      const value = result.meta as unknown as CurlParseValue | undefined
+      // 历史会话恢复时 meta 可能缺失，退回基础标题而非崩溃。
+      if (!value || typeof value.ok !== 'boolean') {
+        return { card: 'generic', title: 'curl_parse' }
+      }
       const title = !value.ok
         ? 'curl_parse failed'
         : value.executed && value.response

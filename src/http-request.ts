@@ -172,7 +172,11 @@ export function applyHttpRequestTool(
       rawInput: args.body?.content,
     }),
     presentResult: (args, result) => {
-      const value = result.meta as unknown as HttpResponseValue
+      const value = result.meta as unknown as HttpResponseValue | undefined
+      // 历史会话恢复时 meta 可能缺失，退回基础标题而非崩溃。
+      if (!value || typeof value.status !== 'number') {
+        return { card: 'generic', title: `${args.method ?? 'GET'} ${args.url}` }
+      }
       return {
         card: 'generic',
         title: `${value.status} ${args.method ?? 'GET'} ${args.url}`,

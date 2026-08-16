@@ -8,6 +8,7 @@ import { parseCurl } from './core/curl.ts'
 import { runHttpRequest } from './core/fetch.ts'
 import { formatBytes } from './core/format.ts'
 import type { RequestHistory } from './core/history.ts'
+import type { HttpRequestSpec } from './core/types.ts'
 import type { HttpResponseValue } from './core/types.ts'
 
 /** Model-facing content for a parsed (and possibly executed) curl command. */
@@ -29,8 +30,9 @@ export function renderCurlParse(args: CurlParseArgs, value: CurlParseValue): str
     lines.push(`✅ Sent → ${res.status} ${res.statusText} · ${res.durationMs}ms · ${formatBytes(res.sizeBytes)}${res.truncated ? ' (truncated)' : ''}`)
     const body = res.body.trim()
     if (body.length > 0) {
+      const fence = res.bodyKind === 'json' ? 'json' : res.bodyKind === 'html' ? 'html' : 'text'
       lines.push('Body:')
-      lines.push('```text')
+      lines.push('```' + fence)
       lines.push(body.slice(0, 6000))
       lines.push('```')
     }
@@ -54,6 +56,22 @@ interface CurlParseValue {
   redirect?: 'follow' | 'manual'
   executed?: boolean
   response?: HttpResponseValue
+}
+
+/**
+ * 从解析结果构建工具返回值。只写入有值的字段：
+ * 框架要求工具返回 lossless JSON，undefined 属性会导致
+ * "value is not lossless JSON" 校验失败。
+ */
+export function buildCurlParseValue(parsed: HttpRequestSpec): CurlParseValue {
+  const value: CurlParseValue = { ok: true }
+  if (parsed.method) value.method = parsed.method
+  if (parsed.url) value.url = parsed.url
+  if (parsed.headers && Object.keys(parsed.headers).length > 0) value.headers = parsed.headers
+  if (parsed.body) value.body = parsed.body
+  if (parsed.auth) value.auth = parsed.auth
+  if (parsed.redirect) value.redirect = parsed.redirect
+  return value
 }
 
 /** Register the `curl_parse` tool on a context. */
@@ -110,15 +128,7 @@ export function applyCurlParseTool(
       if (!parsed.ok) {
         return { ok: false, error: parsed.error } as unknown as JsonValue
       }
-      const value: CurlParseValue = {
-        ok: true,
-        method: parsed.value.method,
-        url: parsed.value.url,
-        headers: parsed.value.headers,
-        body: parsed.value.body,
-        auth: parsed.value.auth,
-        redirect: parsed.value.redirect,
-      }
+      const value = buildCurlParseValue(parsed.value)
       if (args.execute) {
         const response = await runHttpRequest(parsed.value, config, exec.signal)
         value.executed = true

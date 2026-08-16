@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer as createNetServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveConfig } from '../src/config.ts'
@@ -155,5 +156,17 @@ describe('runHttpRequest', () => {
 
   it('rejects invalid URLs', async () => {
     await expect(runHttpRequest(spec({ url: 'not a url' }), config)).rejects.toThrow('invalid URL')
+  })
+
+  it('surfaces the underlying network error code', async () => {
+    // 取一个刚释放的空闲端口（未监听），连接会立即 ECONNREFUSED；
+    // 错误信息应透出底层码，而不是笼统的 "fetch failed"。
+    const probe = createNetServer()
+    await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve))
+    const free = (probe.address() as AddressInfo).port
+    await new Promise<void>((resolve) => probe.close(() => resolve()))
+    await expect(
+      runHttpRequest(spec({ url: `http://127.0.0.1:${free}/x` }), config),
+    ).rejects.toThrow(/request failed.*(ECONNREFUSED|EADDRNOTAVAIL|ENETUNREACH|ECONNRESET)/)
   })
 })

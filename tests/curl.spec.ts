@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildCurlParseValue } from '../src/curl-parse.ts'
 import { parseCurl, tokenizeCurl } from '../src/core/curl.ts'
 
 describe('tokenizeCurl', () => {
@@ -118,5 +119,41 @@ describe('parseCurl', () => {
       expect(result.value.method).toBe('POST')
       expect(result.value.body).toEqual({ type: 'text', content: 'x' })
     }
+  })
+})
+
+describe('buildCurlParseValue (lossless JSON)', () => {
+  it('never emits undefined properties for a curl without auth/redirect', () => {
+    // 复现线上 bug：无 -u/-L 的 curl 此前会输出 auth/redirect: undefined，
+    // 导致框架报 "value is not lossless JSON"。
+    const result = parseCurl(`curl -X POST https://api.example.com/posts -H "Content-Type: application/json" -d '{"a":1}'`)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = buildCurlParseValue(result.value)
+    for (const [key, v] of Object.entries(value)) {
+      expect(v, `property "${key}" must not be undefined`).not.toBeUndefined()
+    }
+    // 往返序列化应保真
+    expect(JSON.parse(JSON.stringify(value))).toEqual(value)
+  })
+
+  it('includes auth when the curl has one', () => {
+    const result = parseCurl(`curl -u 'user:pass' https://api.example.com`)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = buildCurlParseValue(result.value)
+    expect(value.auth).toEqual({ type: 'basic', token: 'user:pass' })
+    expect(value.headers).toBeUndefined()
+  })
+
+  it('includes redirect only when the curl asks for it', () => {
+    const result = parseCurl(`curl -L https://api.example.com`)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = buildCurlParseValue(result.value)
+    expect(value.redirect).toBe('follow')
+    expect(value.headers).toBeUndefined()
+    expect(value.body).toBeUndefined()
+    expect(value.auth).toBeUndefined()
   })
 })

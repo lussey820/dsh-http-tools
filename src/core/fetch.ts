@@ -111,7 +111,13 @@ export async function runHttpRequest(
     if (controller.signal.aborted && !(signal?.aborted)) {
       throw new Error(`http_request: request timed out after ${timeoutMs}ms`)
     }
-    throw error
+    // fetch 的顶层错误通常只是 "fetch failed"，底层原因（ENOTFOUND、
+    // ECONNREFUSED、CERT_HAS_EXPIRED 等）在 error.cause 里，尽量透出。
+    const err = error as { cause?: { code?: string; message?: string } }
+    const code = err.cause?.code
+    const causeMsg = err.cause?.message
+    const suffix = code ? ` (${code})` : causeMsg ? `: ${causeMsg}` : ''
+    throw new Error(`http_request: request failed${suffix}`, { cause: error })
   }
   clearTimeout(timeoutId)
   if (signal) signal.removeEventListener('abort', onOuterAbort)

@@ -1,0 +1,3 @@
+- insert:
+  - id: http-tools
+    name: dsh-http-tools

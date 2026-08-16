@@ -1,0 +1,6 @@
+# Out-of-tree plugin dev setup matching dsh profiles: never auto-install the
+# @deepseek-ai/* peer dependencies; they resolve from the linked DeepSeek
+# Harness checkout (see node_modules/@deepseek-ai junction) and from the dsh
+# installation fallback at load time.
+nodeLinker: hoisted
+autoInstallPeers: false

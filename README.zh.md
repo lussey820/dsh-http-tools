@@ -4,6 +4,17 @@
 
 `dsh-http-tools` 让你的 DSH agent 拥有一个完整的 REST 客户端：可以发送任意请求（完整控制 method、headers、body 与认证），粘贴一段 `curl` 命令让 agent 直接解析或改造后重发，还可以在会话内回顾、对比历史请求——全程都在对话里完成。
 
+附带一个可选的 **UI 配套包**（`dsh-http-tools-ui`），在 Web UI 中把每一次 `http_request` / `curl_parse` 调用渲染成 DeepSeek 品牌风格的工具卡片。
+
+## 功能特性
+
+- **`http_request`** — 完整 REST 客户端：GET/POST/PUT/PATCH/DELETE/HEAD、自定义 headers、body、Basic/Bearer 认证。返回状态码、耗时、大小、响应头、截断后的响应体，以及脱敏后的等价 `curl` 命令。
+- **`curl_parse`** — 把 `curl` 命令解析为结构化请求，或一步解析并发送（`execute: true`）。
+- **`request_history`** — 查询会话内历史请求、查看详情、并排对比两次响应。
+- **分页友好** — `Link` 响应头会透出给模型，让它无需再读原始 headers 就能跟进 `rel="next"` / `rel="last"`。
+- **预览瘦身日志** — 持久化的会话日志只保留 6000 字符的 body 预览，日志随请求量增长依然可读。
+- **DeepSeek 品牌 UI 卡片**（配合 `dsh-http-tools-ui`）— 鲸鱼 logo、品牌色方法徽章、官方状态点（含运行中动画）、跟随主题配色、可折叠 JSON 响应体（JsonTree）、一键复制响应体 / curl。
+
 ## 工具
 
 | 工具 | 说明 |
@@ -16,9 +27,21 @@
 
 ```sh
 dsh plugin --profile web add dsh-http-tools
+# 可选：Web 客户端的 DeepSeek 品牌 UI 卡片
+dsh plugin --profile web add dsh-http-tools-ui
 ```
 
 零配置开箱即用。需要 Node.js >= 22（使用原生 `fetch`）。
+
+### UI 卡片
+
+`dsh-http-tools-ui` 是独立包，为 `http_request` 与 `curl_parse` 注册专属工具视图。安装后，每次调用都会在对话里渲染成卡片：
+
+- 鲸鱼 logo + 品牌色方法徽章（`GET` / `POST` / …）
+- 官方状态点：成功绿、非 2xx 琥珀、错误红、运行中为像素追逐动画
+- 行头摘要：状态 · 耗时 · 大小 · 是否截断
+- 可展开的响应：关键 headers 内联展示，JSON 响应体为可折叠树（带复制操作），非 JSON 为纯文本
+- **复制响应体 / 复制 curl** 按钮，全部颜色跟随主题（`--dsw-*` token）
 
 ## 试试
 
@@ -69,9 +92,10 @@ curl -X POST https://api.example.com/v1/users -H "Content-Type: application/json
 
 ```sh
 pnpm install
-pnpm test      # vitest 单元测试
+pnpm test          # vitest 单元测试
 pnpm run typecheck
-pnpm run build # tsdown -> lib/
+pnpm run build     # tsdown -> lib/
+pnpm --filter dsh-http-tools-ui run build   # UI client bundle -> ui/lib/
 ```
 
 针对本地 DeepSeek Harness 检出做冒烟测试，用引用构建产物的 patch 覆盖层挂载插件：

@@ -72,7 +72,7 @@ export function renderHttpResult(args: HttpRequestArgs, value: HttpResponseValue
     const fence = value.bodyKind === 'json' ? 'json' : value.bodyKind === 'html' ? 'html' : 'text'
     lines.push('Body:')
     lines.push('```' + fence)
-    lines.push(body.slice(0, 1500))
+    lines.push(body.slice(0, 6000))
     lines.push('```')
   } else {
     lines.push('Body: (empty)')

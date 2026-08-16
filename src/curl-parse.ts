@@ -31,7 +31,7 @@ export function renderCurlParse(args: CurlParseArgs, value: CurlParseValue): str
     if (body.length > 0) {
       lines.push('Body:')
       lines.push('```text')
-      lines.push(body.slice(0, 1000))
+      lines.push(body.slice(0, 6000))
       lines.push('```')
     }
   }

@@ -1,0 +1,44 @@
+name: Publish to npm
+
+# Publish a new release with: git tag v0.1.0 && git push origin v0.1.0
+# Requires an npm automation token stored in the NPM_TOKEN repository secret:
+#   npm profile enable-2fa auth-and-writes
+#   npm token create --read-only=false --cidr=0.0.0.0/0 (copy the token)
+#   Settings -> Secrets and variables -> Actions -> New repository secret -> NPM_TOKEN
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
+      # Typecheck against the real DeepSeek Harness API: link the two
+      # peer packages from a shallow checkout of the upstream repo.
+      - name: Build dsh type environment
+        run: |
+          git clone --depth 1 https://github.com/deepseek-ai/deepseek-harness.git ../deepseek-harness
+          (cd ../deepseek-harness && pnpm install --prefer-offline)
+          (cd ../deepseek-harness && pnpm run build)
+          mkdir -p node_modules/@deepseek-ai
+          ln -s ../../deepseek-harness/packages/core/tools node_modules/@deepseek-ai/dsh-tools
+          ln -s ../../deepseek-harness/vendor/cordis node_modules/@deepseek-ai/cordis
+
+      - run: pnpm run typecheck
+      - run: pnpm run build
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

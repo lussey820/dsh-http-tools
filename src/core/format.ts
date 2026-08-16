@@ -1,12 +1,40 @@
 /** Shared formatting helpers: curl command generation and byte rendering. */
 
-import type { HttpRequestSpec } from './types.ts'
+import type { CurlParseValue } from './curl.ts'
+import type { HttpRequestSpec, HttpResponseValue } from './types.ts'
+
+/** 写入展示层（render / presentationMeta）的响应体最大字符数。 */
+export const PREVIEW_BODY_CHARS = 6000
 
 /** Render bytes as a compact human string (e.g. `3.2KB`). */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
+}
+
+/** 挑选要展示给模型的响应头：类型/长度 + 分页所需的 Link。 */
+export function selectDisplayHeaders(headers: Record<string, string>): string[] {
+  return Object.entries(headers)
+    .filter(([name]) => name === 'content-type' || name === 'content-length' || name === 'link')
+    .map(([name, v]) => `${name}: ${v}`)
+}
+
+/**
+ * presentationMeta 瘦身：只保留 render 需要的响应体前缀。
+ * 完整 body 会随会话持久化，不截断会让 session 文件随请求数无限膨胀。
+ */
+export function httpResultPresentationMeta(value: HttpResponseValue): HttpResponseValue {
+  return { ...value, body: value.body.slice(0, PREVIEW_BODY_CHARS) }
+}
+
+/** curl_parse 版 presentationMeta 瘦身（含执行后的响应体）。 */
+export function curlParsePresentationMeta(value: CurlParseValue): CurlParseValue {
+  if (!value.ok || !value.response) return value
+  return {
+    ...value,
+    response: { ...value.response, body: value.response.body.slice(0, PREVIEW_BODY_CHARS) },
+  }
 }
 
 /** Quote a shell argument with single quotes, escaping embedded quotes. */

@@ -6,7 +6,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { ResolvedConfig } from './config.ts'
 import { buildCurlParseValue, parseCurl, type CurlParseValue } from './core/curl.ts'
 import { runHttpRequest } from './core/fetch.ts'
-import { formatBytes } from './core/format.ts'
+import { curlParsePresentationMeta, formatBytes, PREVIEW_BODY_CHARS } from './core/format.ts'
 import type { RequestHistory } from './core/history.ts'
 
 /** Model-facing content for a parsed (and possibly executed) curl command. */
@@ -31,7 +31,7 @@ export function renderCurlParse(args: CurlParseArgs, value: CurlParseValue): str
       const fence = res.bodyKind === 'json' ? 'json' : res.bodyKind === 'html' ? 'html' : 'text'
       lines.push('Body:')
       lines.push('```' + fence)
-      lines.push(body.slice(0, 6000))
+      lines.push(body.slice(0, PREVIEW_BODY_CHARS))
       lines.push('```')
     }
   }
@@ -69,7 +69,8 @@ export function applyCurlParseTool(
         type: 'text',
         text: renderCurlParse(args, value as unknown as CurlParseValue),
       }],
-      presentationMeta: (args, value) => value,
+      presentationMeta: (args, value) =>
+        curlParsePresentationMeta(value as unknown as CurlParseValue) as unknown as JsonValue,
     },
     presentCall: (args) => ({
       card: 'generic',

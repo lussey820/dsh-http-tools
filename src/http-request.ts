@@ -5,7 +5,7 @@ import type { JsonValue } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ResolvedConfig } from './config.ts'
 import { runHttpRequest } from './core/fetch.ts'
-import { formatBytes } from './core/format.ts'
+import { formatBytes, httpResultPresentationMeta, PREVIEW_BODY_CHARS, selectDisplayHeaders } from './core/format.ts'
 import type { RequestHistory } from './core/history.ts'
 import type { BodyKind, HttpRequestBody, HttpRequestSpec, HttpResponseValue } from './core/types.ts'
 
@@ -62,17 +62,14 @@ export function renderHttpResult(args: HttpRequestArgs, value: HttpResponseValue
     `${statusIcon} ${value.status} ${value.statusText} · ${value.durationMs}ms · ${formatBytes(value.sizeBytes)}${truncated}`,
     `Request: ${args.method ?? 'GET'} ${args.url}`,
   ]
-  const contentHeader = Object.entries(value.headers)
-    .filter(([name]) => name === 'content-type' || name === 'content-length')
-    .map(([name, v]) => `${name}: ${v}`)
-    .join(' · ')
+  const contentHeader = selectDisplayHeaders(value.headers).join(' · ')
   if (contentHeader) lines.push(`Headers: ${contentHeader}`)
   const body = value.body.trim()
   if (body.length > 0) {
     const fence = value.bodyKind === 'json' ? 'json' : value.bodyKind === 'html' ? 'html' : 'text'
     lines.push('Body:')
     lines.push('```' + fence)
-    lines.push(body.slice(0, 6000))
+    lines.push(body.slice(0, PREVIEW_BODY_CHARS))
     lines.push('```')
   } else {
     lines.push('Body: (empty)')
@@ -163,7 +160,8 @@ export function applyHttpRequestTool(
         type: 'text',
         text: renderHttpResult(args, value as unknown as HttpResponseValue),
       }],
-      presentationMeta: (args, value) => value,
+      presentationMeta: (args, value) =>
+        httpResultPresentationMeta(value as unknown as HttpResponseValue) as unknown as JsonValue,
     },
     presentCall: (args) => ({
       card: 'generic',

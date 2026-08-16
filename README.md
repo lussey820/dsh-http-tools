@@ -79,10 +79,12 @@ To smoke-test against a local DeepSeek Harness checkout, mount the built plugin 
 ```sh
 pnpm run build
 
-# http-tools.patch.yml — reference the built entry with an absolute path
+# http-tools.patch.yml — reference the built entry
+# (on Windows, absolute paths must be file:// URLs, percent-encoded)
 - insert:
   - id: http-tools
-    name: /absolute/path/to/dsh-http-tools/lib/index.js
+    name: /absolute/path/to/dsh-http-tools/lib/index.js   # POSIX
+    # name: file:///C:/Users/.../dsh-http-tools/lib/index.js   # Windows
 
 # from the deepseek-harness repo root:
 pnpm dsh web --patch /absolute/path/to/http-tools.patch.yml

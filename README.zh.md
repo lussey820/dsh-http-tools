@@ -79,10 +79,12 @@ pnpm run build # tsdown -> lib/
 ```sh
 pnpm run build
 
-# http-tools.patch.yml —— 用绝对路径引用构建后的入口
+# http-tools.patch.yml —— 引用构建后的入口
+# （Windows 上绝对路径必须是 file:// URL，并做百分号编码）
 - insert:
   - id: http-tools
-    name: /绝对路径/dsh-http-tools/lib/index.js
+    name: /绝对路径/dsh-http-tools/lib/index.js   # POSIX
+    # name: file:///C:/Users/.../dsh-http-tools/lib/index.js   # Windows
 
 # 在 deepseek-harness 仓库根目录执行：
 pnpm dsh web --patch /绝对路径/http-tools.patch.yml

@@ -1,6 +1,6 @@
 {
   "name": "dsh-http-tools",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "HTTP/API debugging toolset for DeepSeek Harness: http_request, curl_parse, request_history",
   "type": "module",
   "main": "lib/index.js",

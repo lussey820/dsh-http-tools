@@ -2,5 +2,8 @@
 # @deepseek-ai/* peer dependencies; they resolve from the linked DeepSeek
 # Harness checkout (see node_modules/@deepseek-ai junction) and from the dsh
 # installation fallback at load time.
+packages:
+  - .
+  - ui
 nodeLinker: hoisted
 autoInstallPeers: false

@@ -1,0 +1,4 @@
+# Registers the dsh-http-tools-ui client bundle into the web profile.
+- insert:
+  - id: http-tools-ui
+    name: dsh-http-tools-ui

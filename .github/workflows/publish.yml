@@ -32,8 +32,8 @@ jobs:
           (cd ../deepseek-harness && pnpm install --prefer-offline)
           (cd ../deepseek-harness && pnpm run build)
           mkdir -p node_modules/@deepseek-ai
-          ln -s ../../deepseek-harness/packages/core/tools node_modules/@deepseek-ai/dsh-tools
-          ln -s ../../deepseek-harness/vendor/cordis node_modules/@deepseek-ai/cordis
+          ln -s "$(cd ../deepseek-harness/packages/core/tools && pwd)" node_modules/@deepseek-ai/dsh-tools
+          ln -s "$(cd ../deepseek-harness/vendor/cordis && pwd)" node_modules/@deepseek-ai/cordis
 
       - run: pnpm run typecheck
       - run: pnpm run build

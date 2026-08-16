@@ -1,6 +1,6 @@
 /** A best-effort curl command-line parser for the `curl_parse` tool. */
 
-import type { HttpAuth, HttpMethod, HttpRequestBody, HttpRequestSpec } from './types.ts'
+import type { HttpAuth, HttpMethod, HttpRequestBody, HttpRequestSpec, HttpResponseValue } from './types.ts'
 
 export type ParseResult =
   | { ok: true; value: HttpRequestSpec }
@@ -252,4 +252,34 @@ export function parseCurl(input: string): ParseResult {
     redirect,
   }
   return { ok: true, value: spec }
+}
+
+/** Structured value a `curl_parse` tool returns to the model/UI. */
+export interface CurlParseValue {
+  ok: boolean
+  error?: string
+  method?: string
+  url?: string
+  headers?: Record<string, string>
+  body?: { type: 'json' | 'text' | 'form'; content: string }
+  auth?: { type: 'bearer' | 'basic'; token: string }
+  redirect?: 'follow' | 'manual'
+  executed?: boolean
+  response?: HttpResponseValue
+}
+
+/**
+ * 从解析结果构建工具返回值。只写入有值的字段：
+ * 框架要求工具返回 lossless JSON，undefined 属性会导致
+ * "value is not lossless JSON" 校验失败。
+ */
+export function buildCurlParseValue(parsed: HttpRequestSpec): CurlParseValue {
+  const value: CurlParseValue = { ok: true }
+  if (parsed.method) value.method = parsed.method
+  if (parsed.url) value.url = parsed.url
+  if (parsed.headers && Object.keys(parsed.headers).length > 0) value.headers = parsed.headers
+  if (parsed.body) value.body = parsed.body
+  if (parsed.auth) value.auth = parsed.auth
+  if (parsed.redirect) value.redirect = parsed.redirect
+  return value
 }

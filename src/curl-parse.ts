@@ -4,12 +4,10 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ResolvedConfig } from './config.ts'
-import { parseCurl } from './core/curl.ts'
+import { buildCurlParseValue, parseCurl, type CurlParseValue } from './core/curl.ts'
 import { runHttpRequest } from './core/fetch.ts'
 import { formatBytes } from './core/format.ts'
 import type { RequestHistory } from './core/history.ts'
-import type { HttpRequestSpec } from './core/types.ts'
-import type { HttpResponseValue } from './core/types.ts'
 
 /** Model-facing content for a parsed (and possibly executed) curl command. */
 export function renderCurlParse(args: CurlParseArgs, value: CurlParseValue): string {
@@ -43,35 +41,6 @@ export function renderCurlParse(args: CurlParseArgs, value: CurlParseValue): str
 interface CurlParseArgs {
   curl: string
   execute?: boolean
-}
-
-interface CurlParseValue {
-  ok: boolean
-  error?: string
-  method?: string
-  url?: string
-  headers?: Record<string, string>
-  body?: { type: 'json' | 'text' | 'form'; content: string }
-  auth?: { type: 'bearer' | 'basic'; token: string }
-  redirect?: 'follow' | 'manual'
-  executed?: boolean
-  response?: HttpResponseValue
-}
-
-/**
- * 从解析结果构建工具返回值。只写入有值的字段：
- * 框架要求工具返回 lossless JSON，undefined 属性会导致
- * "value is not lossless JSON" 校验失败。
- */
-export function buildCurlParseValue(parsed: HttpRequestSpec): CurlParseValue {
-  const value: CurlParseValue = { ok: true }
-  if (parsed.method) value.method = parsed.method
-  if (parsed.url) value.url = parsed.url
-  if (parsed.headers && Object.keys(parsed.headers).length > 0) value.headers = parsed.headers
-  if (parsed.body) value.body = parsed.body
-  if (parsed.auth) value.auth = parsed.auth
-  if (parsed.redirect) value.redirect = parsed.redirect
-  return value
 }
 
 /** Register the `curl_parse` tool on a context. */

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCurlParseValue } from '../src/curl-parse.ts'
-import { parseCurl, tokenizeCurl } from '../src/core/curl.ts'
+import { buildCurlParseValue, parseCurl, tokenizeCurl } from '../src/core/curl.ts'
 
 describe('tokenizeCurl', () => {
   it('splits simple arguments', () => {
